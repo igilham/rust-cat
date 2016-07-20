@@ -1,14 +1,38 @@
 use std::env;
 use std::error::Error;
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 
 fn main() {
     // skip the first element as it is the program name
-    for arg in env::args().skip(1) {
-        let path = Path::new(&arg);
-        cat(&path);
+    let args = env::args();
+    if args.len() == 1 {
+        println!("args.len() == 1");
+        cat_stdin();
+    } else {
+        println!("args.len() != 1");
+        for arg in args.skip(1) {
+            let path = Path::new(&arg);
+            cat(&path);
+        }
+    }
+}
+
+fn cat_stdin() {
+    let stdin = io::stdin();
+    let mut s = String::new();
+    loop {
+        match stdin.read_line(&mut s) {
+            Err(why) => panic!("cat: failed to read from stdin: {}", why),
+            Ok(n) => if n == 0 {
+                break;
+            } else {
+                print!("{}", s);
+                s.clear();
+            },
+        };
     }
 }
 
