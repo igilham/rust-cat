@@ -5,6 +5,8 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 
+const STDIN: &'static str = "-";
+
 fn main() {
     // skip the first element as it is the program name
     let args = env::args();
@@ -14,7 +16,7 @@ fn main() {
     } else {
         println!("args.len() != 1");
         for arg in args.skip(1) {
-            if arg.eq("-") {
+            if arg.eq(STDIN) {
                 cat_stdin();
             } else {
                 let path = Path::new(&arg);
