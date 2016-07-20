@@ -14,8 +14,12 @@ fn main() {
     } else {
         println!("args.len() != 1");
         for arg in args.skip(1) {
-            let path = Path::new(&arg);
-            cat(&path);
+            if arg.eq("-") {
+                cat_stdin();
+            } else {
+                let path = Path::new(&arg);
+                cat(&path);
+            }
         }
     }
 }
