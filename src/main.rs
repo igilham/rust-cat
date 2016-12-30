@@ -34,6 +34,9 @@ fn main() {
     }
 }
 
+// Read from `input` and print to stdout.
+// `name` is used in error messages.
+// `m` selects whether to read line-by-line or to read the entire input.
 fn cat<R, N>(input: R, name: N, m: Method) where R: Read, N: Display {
     let mut reader = BufReader::with_capacity(BUFFER_SIZE, input);
     loop {
