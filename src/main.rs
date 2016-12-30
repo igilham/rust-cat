@@ -1,11 +1,12 @@
 use std::env;
-use std::error::Error;
 use std::fs::File;
 use std::io;
+use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
 
 const STDIN: &'static str = "-";
+const BUFFER_SIZE: usize = 4096;
 
 fn main() {
     // skip the first element as it is the program name
@@ -42,13 +43,18 @@ fn cat_stdin() {
 
 fn cat(path: &Path) {
     let display = path.display();
-    let mut file = match File::open(path) {
-        Err(why) => panic!("cat: failed to open {}: {}", display, why.description()),
-        Ok(file) => file,
-    };
-    let mut s = String::new();
-    match file.read_to_string(&mut s) {
-        Err(why) => panic!("cat: failed to read {}: {}", display, why.description()),
-        Ok(_) => print!("{}", s),
-    };
+    let file = File::open(path)
+       .expect(format!("cat: failed to open: {}", display).as_str());
+    
+    let mut reader = BufReader::with_capacity(BUFFER_SIZE, file);
+    loop {
+        let mut s = String::new();
+        let n = reader.read_to_string(&mut s)
+            .expect(format!("cat: failed to open {}", display).as_str());
+        if n > 0 {
+            print!("{}", s);
+        } else {
+            break;
+        }
+    }
 }
