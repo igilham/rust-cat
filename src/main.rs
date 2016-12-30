@@ -11,10 +11,8 @@ fn main() {
     // skip the first element as it is the program name
     let args = env::args();
     if args.len() == 1 {
-        println!("args.len() == 1");
         cat_stdin();
     } else {
-        println!("args.len() != 1");
         for arg in args.skip(1) {
             if arg.eq(STDIN) {
                 cat_stdin();
