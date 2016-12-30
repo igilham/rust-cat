@@ -32,6 +32,7 @@ fn main() {
             }
         }
     }
+    io::stdout().flush().unwrap();
 }
 
 // Read from `input` and print to stdout.
@@ -39,17 +40,18 @@ fn main() {
 // `m` selects whether to read line-by-line or to read the entire input.
 fn cat<R, N>(input: R, name: N, m: Method) where R: Read, N: Display {
     let mut reader = BufReader::with_capacity(BUFFER_SIZE, input);
-    loop {
-        let mut s = String::new();
-        let n = match m {
-            Method::Line => reader.read_line(&mut s),
-            Method::File => reader.read_to_string(&mut s),
-        }.expect(format!("cat: failed to open {}", name).as_str());
-        if n > 0 {
-            print!("{}", s);
-        } else {
-            break;
-        }
+    cat_recurse(&mut reader, name, m);
+}
+
+fn cat_recurse<R, N>(reader: &mut BufReader<R>, name: N, m: Method) where R: Read, N: Display {
+    let mut s = String::new();
+    let n = match m {
+        Method::Line => reader.read_line(&mut s),
+        Method::File => reader.read_to_string(&mut s),
+    }.expect(format!("cat: failed to open {}", name).as_str());
+    if n > 0 {
+        print!("{}", s);
+        // recurse
+        cat_recurse(reader, name, m);
     }
-    io::stdout().flush().unwrap();
 }
