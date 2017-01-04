@@ -4,47 +4,36 @@ use std::fmt::Display;
 use std::io;
 use std::io::BufReader;
 use std::io::prelude::*;
-use std::path::Path;
 
-const STDIN: &'static str = "-";
 const BUFFER_SIZE: usize = 4096;
 
-enum Method {
-    File,
-    Line,
-}
-
 fn main() {
-    // skip the first element as it is the program name
     let args = env::args();
     if args.len() == 1 {
-        cat(io::stdin(), "stdin", Method::Line);
+        cat(io::stdin(), "stdin");
     } else {
+        // skip the first element as it is the program name
         for arg in args.skip(1) {
-            if arg.eq(STDIN) {
-                cat(io::stdin(), "stdin", Method::Line);
+            if arg == "-" {
+                cat(io::stdin(), "stdin");
             } else {
-                let path = Path::new(&arg);
-                let display = path.display();
-                let file = File::open(path)
-                    .expect(format!("cat: failed to open: {}", display).as_str());
-                cat(file, display, Method::File);
+                let file = File::open(&arg)
+                    .unwrap_or_else(|e| panic!("cat: failed to open{} : {}", &arg, e));
+                cat(file, &arg);
             }
         }
     }
 }
 
-// Read from `input` and print to stdout.
-// `name` is used in error messages.
-// `m` selects whether to read line-by-line or to read the entire input.
-fn cat<R, N>(input: R, name: N, m: Method) where R: Read, N: Display {
+/// Read from `input` and print to stdout.
+fn cat<R, N>(input: R, name: N)
+        where R: Read, N: Display {
     let mut reader = BufReader::with_capacity(BUFFER_SIZE, input);
+    let mut s = String::new();
     loop {
-        let mut s = String::new();
-        let n = match m {
-            Method::Line => reader.read_line(&mut s),
-            Method::File => reader.read_to_string(&mut s),
-        }.expect(format!("cat: failed to open {}", name).as_str());
+        s.clear();
+        let n = reader.read_line(&mut s);
+        let n = n.unwrap_or_else(|e| panic!("cat: failed to read {}: {}", name, e));
         if n > 0 {
             print!("{}", s);
         } else {
