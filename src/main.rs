@@ -1,57 +1,60 @@
 use std::env;
 use std::fs::File;
-use std::fmt::Display;
 use std::io;
 use std::io::BufReader;
 use std::io::prelude::*;
-use std::path::Path;
 
 const STDIN: &'static str = "-";
 const BUFFER_SIZE: usize = 4096;
 
-enum Method {
-    File,
+enum Method<'a> {
+    File(&'a str),
     Line,
+}
+
+impl<'a> Method<'a> {
+    fn name(&self) -> &str {
+        match *self {
+            Method::File(name) => name,
+            Method::Line => "stdin",
+        }
+    }
 }
 
 fn main() {
     // skip the first element as it is the program name
     let args = env::args();
     if args.len() == 1 {
-        cat(io::stdin(), "stdin", Method::Line);
+        cat(io::stdin(), Method::Line);
     } else {
         for arg in args.skip(1) {
             if arg.eq(STDIN) {
-                cat(io::stdin(), "stdin", Method::Line);
+                cat(io::stdin(), Method::Line);
             } else {
-                let path = Path::new(&arg);
-                let display = path.display();
-                let file = File::open(path)
-                    .expect(format!("cat: failed to open: {}", display).as_str());
-                cat(file, display, Method::File);
+                let file = File::open(&arg)
+                    .unwrap_or_else(|e| panic!("cat: failed to open {}: {}", &arg, e));
+                cat(file, Method::File(&arg));
             }
         }
     }
     io::stdout().flush().unwrap();
 }
 
-// Read from `input` and print to stdout.
-// `name` is used in error messages.
-// `m` selects whether to read line-by-line or to read the entire input.
-fn cat<R, N>(input: R, name: N, m: Method) where R: Read, N: Display {
+/// Read from `input` and print to stdout.
+fn cat<R>(input: R, m: Method) where R: Read {
     let mut reader = BufReader::with_capacity(BUFFER_SIZE, input);
-    cat_recurse(&mut reader, name, m);
+    cat_recurse(&mut reader, m);
 }
 
-fn cat_recurse<R, N>(reader: &mut BufReader<R>, name: N, m: Method) where R: Read, N: Display {
+fn cat_recurse<R>(reader: &mut BufReader<R>, m: Method) where R: Read {
     let mut s = String::new();
     let n = match m {
         Method::Line => reader.read_line(&mut s),
-        Method::File => reader.read_to_string(&mut s),
-    }.expect(format!("cat: failed to open {}", name).as_str());
+        Method::File(..) => reader.read_to_string(&mut s),
+    };
+    let n = n.unwrap_or_else(|e|panic!("cat: failed to open {}: {}", m.name(), e));
     if n > 0 {
         print!("{}", s);
-        // recurse
-        cat_recurse(reader, name, m);
+        cat_recurse(reader, m);
     }
 }
